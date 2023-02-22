@@ -8,12 +8,31 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 interface IContracts {
     event Transfer(address indexed from, address indexed to, uint256 value);
-    event Approval(address indexed owner, address indexed spender, uint256 value);
+    event Approval(
+        address indexed owner,
+        address indexed spender,
+        uint256 value
+    );
+
     function balanceOf(address account) external view returns (uint256);
+
     function transfer(address to, uint256 amount) external returns (bool);
+
     function approve(address spender, uint256 amount) external returns (bool);
-    function lock(address owner, address token, bool isLpToken, uint256 amount, uint256 unlockDate, string memory description) external returns (uint256 lockId);
-    function getPair(address tokenA, address tokenB) external view returns (address pair);
+
+    function lock(
+        address owner,
+        address token,
+        bool isLpToken,
+        uint256 amount,
+        uint256 unlockDate,
+        string memory description
+    ) external returns (uint256 lockId);
+
+    function getPair(
+        address tokenA,
+        address tokenB
+    ) external view returns (address pair);
 }
 
 contract TokenPreSale is ReentrancyGuard, Ownable {
@@ -82,15 +101,20 @@ contract TokenPreSale is ReentrancyGuard, Ownable {
 
     event Received(address, uint);
 
-    constructor(address _router, address _factory, address _weth, address _locker) public {
-        BASE_MULTIPLIER = (10**18);
+    constructor(
+        address _router,
+        address _factory,
+        address _weth,
+        address _locker
+    ) public {
+        BASE_MULTIPLIER = (10 ** 18);
         ROUTER = _router;
         FACTORY = _factory;
         WETH = _weth;
         LOCKER = _locker;
     }
 
-     /**
+    /**
      * @dev To add the sale times, can only be called once
      * @param _startTimeSeedSale Unix timestamp seed sale start
      * @param _endTimeSeedSale Unix timestamp seed sale end
@@ -107,11 +131,20 @@ contract TokenPreSale is ReentrancyGuard, Ownable {
         uint256 _endTimePrivateSale,
         uint256 _startTimePublicSale,
         uint256 _endTimePublicSale,
-        uint256 _vestingStartTime 
+        uint256 _vestingStartTime
     ) external onlyOwner {
         require(presaleTimeInitiated == false, "already initiated");
-        require(_startTimeSeedSale > 0 || _endTimeSeedSale > 0 || _startTimePrivateSale > 0 || _endTimePrivateSale > 0 || _startTimePublicSale > 0 || _endTimePublicSale > 0 || _vestingStartTime > 0, "Invalid parameters");
-        
+        require(
+            _startTimeSeedSale > 0 ||
+                _endTimeSeedSale > 0 ||
+                _startTimePrivateSale > 0 ||
+                _endTimePrivateSale > 0 ||
+                _startTimePublicSale > 0 ||
+                _endTimePublicSale > 0 ||
+                _vestingStartTime > 0,
+            "Invalid parameters"
+        );
+
         if (_startTimeSeedSale > 0) {
             require(block.timestamp < _startTimeSeedSale, "in past");
             startTimeSeedSale = _startTimeSeedSale;
@@ -130,7 +163,10 @@ contract TokenPreSale is ReentrancyGuard, Ownable {
 
         if (_endTimePrivateSale > 0) {
             require(block.timestamp < _endTimePrivateSale, "in past");
-            require(_endTimePrivateSale > _startTimePrivateSale, "ends before start");
+            require(
+                _endTimePrivateSale > _startTimePrivateSale,
+                "ends before start"
+            );
             endTimePrivateSale = _endTimePrivateSale;
         }
 
@@ -141,21 +177,22 @@ contract TokenPreSale is ReentrancyGuard, Ownable {
 
         if (_endTimePublicSale > 0) {
             require(block.timestamp < _endTimePublicSale, "in past");
-            require(_endTimePublicSale > _startTimePublicSale, "ends before start");
+            require(
+                _endTimePublicSale > _startTimePublicSale,
+                "ends before start"
+            );
             endTimePublicSale = _endTimePublicSale;
         }
 
         if (_vestingStartTime > 0) {
             require(
-            _vestingStartTime >= endTimePublicSale,
-            "Vesting starts before Presale ends"
-        );
+                _vestingStartTime >= endTimePublicSale,
+                "Vesting starts before Presale ends"
+            );
             vestingStartTime = _vestingStartTime;
         }
         presaleTimeInitiated = true;
-        
     }
-
 
     /**
      * @dev Creates a new presale
@@ -180,14 +217,10 @@ contract TokenPreSale is ReentrancyGuard, Ownable {
         address payable _treasuryAddress,
         address[] memory _whitelistSeedSale,
         address[] memory _whitelistPrivateSale
-    )
-        external
-        onlyOwner
-        checkSaleNotStartedYet()
-    {   
+    ) external onlyOwner checkSaleNotStartedYet {
         require(presaleTimeInitiated == true, "Time not set");
         require(_treasuryPercentage <= 30, ">30");
-        
+
         saleToken = _saleToken;
         baseDecimals = _baseDecimals;
         amountTokensForLiquidity = _amountTokensForLiquidity;
@@ -203,8 +236,6 @@ contract TokenPreSale is ReentrancyGuard, Ownable {
             whitelistPrivateSale[_whitelistPrivateSale[i]] = true;
         }
     }
-
-   
 
     /**
      * @dev To update the sale times
@@ -223,76 +254,62 @@ contract TokenPreSale is ReentrancyGuard, Ownable {
         uint256 _endTimePrivateSale,
         uint256 _startTimePublicSale,
         uint256 _endTimePublicSale,
-        uint256 _vestingStartTime 
-    )
-        external
-        onlyOwner
-    {
-        require(_startTimeSeedSale > 0 || _endTimeSeedSale > 0 || _startTimePrivateSale > 0 || _endTimePrivateSale > 0 || _startTimePublicSale > 0 || _endTimePublicSale > 0, "Invalid");
+        uint256 _vestingStartTime
+    ) external onlyOwner {
+        require(
+            _startTimeSeedSale > 0 ||
+                _endTimeSeedSale > 0 ||
+                _startTimePrivateSale > 0 ||
+                _endTimePrivateSale > 0 ||
+                _startTimePublicSale > 0 ||
+                _endTimePublicSale > 0,
+            "Invalid"
+        );
 
         if (_startTimeSeedSale > 0) {
-            require(
-                block.timestamp < startTimeSeedSale,
-                "already started"
-            );
+            require(block.timestamp < startTimeSeedSale, "already started");
             require(block.timestamp < _startTimeSeedSale, "time in past");
             startTimeSeedSale = _startTimeSeedSale;
         }
 
         if (_endTimeSeedSale > 0) {
-            require(
-                block.timestamp < endTimeSeedSale,
-                "already ended"
-            );
+            require(block.timestamp < endTimeSeedSale, "already ended");
             require(_endTimeSeedSale > startTimeSeedSale, "Invalid");
             endTimeSeedSale = _endTimeSeedSale;
         }
 
         if (_startTimePrivateSale > 0) {
-            require(
-                block.timestamp < startTimePrivateSale,
-                "already started"
-            );
+            require(block.timestamp < startTimePrivateSale, "already started");
             require(block.timestamp < _startTimePrivateSale, "time in past");
             startTimePrivateSale = _startTimePrivateSale;
         }
 
         if (_endTimePrivateSale > 0) {
-            require(
-                block.timestamp < endTimePrivateSale,
-                "already ended"
-            );
+            require(block.timestamp < endTimePrivateSale, "already ended");
             require(_endTimeSeedSale > endTimePrivateSale, "Invalid");
             endTimePrivateSale = _endTimePrivateSale;
         }
 
         if (_startTimePublicSale > 0) {
-            require(
-                block.timestamp < startTimePublicSale,
-                "already started"
-            );
+            require(block.timestamp < startTimePublicSale, "already started");
             require(block.timestamp < _startTimePublicSale, "time in past");
             startTimePublicSale = _startTimePublicSale;
         }
 
         if (_endTimePublicSale > 0) {
-            require(
-                block.timestamp < endTimePublicSale,
-                "already ended"
-            );
+            require(block.timestamp < endTimePublicSale, "already ended");
             require(_endTimePublicSale > startTimePublicSale, "Invalid");
             endTimePublicSale = _endTimePublicSale;
         }
 
         if (_vestingStartTime > 0) {
             require(
-            _vestingStartTime >= endTimePublicSale,
-            "Vesting starts before Presale ends"
-        );
+                _vestingStartTime >= endTimePublicSale,
+                "Vesting starts before Presale ends"
+            );
             vestingStartTime = _vestingStartTime;
         }
     }
-
 
     /**
      * @dev To add presale sale data
@@ -316,13 +333,9 @@ contract TokenPreSale is ReentrancyGuard, Ownable {
         uint256 _priceSeedSale,
         uint256 _pricePrivateSale,
         uint256 _pricePublicSale
-    )
-        external
-        onlyOwner
-        checkSaleNotStartedYet()
-    {
+    ) external onlyOwner checkSaleNotStartedYet {
         require(presaleTimeInitiated == true, "Time not set");
-        
+
         if (_tokensToSellSeedSale > 0) {
             tokensToSellSeedSale = _tokensToSellSeedSale;
         }
@@ -333,7 +346,9 @@ contract TokenPreSale is ReentrancyGuard, Ownable {
             tokensToSellPublicSale = _tokensToSellPublicSale;
         }
 
-        uint256 totalTokens = tokensToSellSeedSale + tokensToSellPrivateSale + tokensToSellPublicSale;
+        uint256 totalTokens = tokensToSellSeedSale +
+            tokensToSellPrivateSale +
+            tokensToSellPublicSale;
         tokensToSellTotal = totalTokens;
 
         if (_maxAmountTokensForSalePerUserForSeed > 0) {
@@ -355,33 +370,27 @@ contract TokenPreSale is ReentrancyGuard, Ownable {
         if (_pricePublicSale > 0) {
             pricePublicSale = _pricePublicSale;
         }
-                
     }
-
-
 
     /**
      * @dev To whitelist addresses for Seed, can also be called durinig sale
      * @param _wallets Array of wallet addresses
      */
-    function addToWhitelistSeedSale(address[] memory _wallets)
-        external
-        onlyOwner
-    {
+    function addToWhitelistSeedSale(
+        address[] memory _wallets
+    ) external onlyOwner {
         for (uint256 i = 0; i < _wallets.length; i++) {
             whitelistSeedSale[_wallets[i]] = true;
         }
     }
 
-
     /**
      * @dev To whitelist addresses for Private, can also be called durinig sale
      * @param _wallets Array of wallet addresses
      */
-    function addToWhitelistPrivateSale(address[] memory _wallets)
-        external
-        onlyOwner
-    {
+    function addToWhitelistPrivateSale(
+        address[] memory _wallets
+    ) external onlyOwner {
         for (uint256 i = 0; i < _wallets.length; i++) {
             whitelistPrivateSale[_wallets[i]] = true;
         }
@@ -391,10 +400,9 @@ contract TokenPreSale is ReentrancyGuard, Ownable {
      * @dev To remove addresses from the Seed whitelist, can also be called durinig sale
      * @param _wallets Array of wallet addresses
      */
-    function removeFromWhitelistSeedSale(address[] memory _wallets)
-        external
-        onlyOwner
-    {
+    function removeFromWhitelistSeedSale(
+        address[] memory _wallets
+    ) external onlyOwner {
         for (uint256 i = 0; i < _wallets.length; i++) {
             delete whitelistSeedSale[_wallets[i]];
         }
@@ -404,10 +412,9 @@ contract TokenPreSale is ReentrancyGuard, Ownable {
      * @dev To remove addresses from the Private whitelist, can also be called durinig sale
      * @param _wallets Array of wallet addresses
      */
-    function removeFromWhitelistPrivateSale(address[] memory _wallets)
-        external
-        onlyOwner
-    {
+    function removeFromWhitelistPrivateSale(
+        address[] memory _wallets
+    ) external onlyOwner {
         for (uint256 i = 0; i < _wallets.length; i++) {
             delete whitelistPrivateSale[_wallets[i]];
         }
@@ -425,14 +432,12 @@ contract TokenPreSale is ReentrancyGuard, Ownable {
     /**
      * @dev sending the treasury percentage to the team. can only be called once. should be called before the next sale phase starts
      */
-    function claimTreasuryPercentageFromSeed()
-        external
-        onlyOwner
-    {
+    function claimTreasuryPercentageFromSeed() external onlyOwner {
         require(tokensaleCanceled == false, "Sale canceled");
         require(seedSaleTreasuryClaimed == false, "Already finalized");
         require(block.timestamp > endTimeSeedSale, "Sale not finished yet");
-        uint256 treasuryAmountETH = (ethInvestedSeedSale * treasuryPercentage) / 100;
+        uint256 treasuryAmountETH = (ethInvestedSeedSale * treasuryPercentage) /
+            100;
 
         if (treasuryAmountETH > 0) {
             treasuryAddress.transfer(treasuryAmountETH);
@@ -443,14 +448,12 @@ contract TokenPreSale is ReentrancyGuard, Ownable {
     /**
      * @dev sending the treasury percentage to the team. can only be called once. should be called before the next sale phase starts
      */
-    function claimTreasuryPercentageFromPrivate()
-        external
-        onlyOwner
-    {
+    function claimTreasuryPercentageFromPrivate() external onlyOwner {
         require(tokensaleCanceled == false, "Sale canceled");
         require(privateSaleTreasuryClaimed == false, "Already finalized");
         require(block.timestamp > endTimePrivateSale, "Sale not finished yet");
-        uint256 treasuryAmountETH = (ethInvestedPrivateSale * treasuryPercentage) / 100;
+        uint256 treasuryAmountETH = (ethInvestedPrivateSale *
+            treasuryPercentage) / 100;
 
         if (treasuryAmountETH > 0) {
             treasuryAddress.transfer(treasuryAmountETH);
@@ -461,14 +464,12 @@ contract TokenPreSale is ReentrancyGuard, Ownable {
     /**
      * @dev sending the treasury percentage to the team. can only be called once. should be called before the next sale phase starts
      */
-    function claimTreasuryPercentageFromPublic()
-        external
-        onlyOwner
-    {
+    function claimTreasuryPercentageFromPublic() external onlyOwner {
         require(tokensaleCanceled == false, "Sale canceled");
         require(publicSaleTreasuryClaimed == false, "Already finalized");
         require(block.timestamp > endTimePublicSale, "Sale not finished yet");
-        uint256 treasuryAmountETH = (ethInvestedPublicSale * treasuryPercentage) / 100;
+        uint256 treasuryAmountETH = (ethInvestedPublicSale *
+            treasuryPercentage) / 100;
 
         if (treasuryAmountETH > 0) {
             treasuryAddress.transfer(treasuryAmountETH);
@@ -476,28 +477,27 @@ contract TokenPreSale is ReentrancyGuard, Ownable {
         publicSaleTreasuryClaimed = true;
     }
 
-
     /**
-     * @dev To finalize the sale by adding the tokens to liquidity and move the unsold tokens. can only be called once. 
+     * @dev To finalize the sale by adding the tokens to liquidity and move the unsold tokens. can only be called once.
      */
-    function finalizeLiquidity()
-        external
-        onlyOwner
-        checkSaleEnded()
-    {
-        require(seedSaleTreasuryClaimed == true && privateSaleTreasuryClaimed == true && publicSaleTreasuryClaimed == true, "Treasury not claimed");
+    function finalizeLiquidity() external onlyOwner checkSaleEnded {
+        require(
+            seedSaleTreasuryClaimed == true &&
+                privateSaleTreasuryClaimed == true &&
+                publicSaleTreasuryClaimed == true,
+            "Treasury not claimed"
+        );
         require(tokensaleCanceled == false, "Tokensale canceled");
         require(liquidityFinalized == false, "Already finalized");
         require(block.timestamp > endTimePublicSale, "Sale not over yet");
         uint256 LiquidityAmountETH = address(this).balance;
         uint256 tokensForLiquidity = amountTokensForLiquidity * baseDecimals;
 
-        IContracts(saleToken).approve(
-            ROUTER,
-            tokensForLiquidity
-        );
+        IContracts(saleToken).approve(ROUTER, tokensForLiquidity);
 
-        (bool successAddLiq, ) = address(ROUTER).call{value: LiquidityAmountETH}(
+        (bool successAddLiq, ) = address(ROUTER).call{
+            value: LiquidityAmountETH
+        }(
             abi.encodeWithSignature(
                 "addLiquidityETH(address,uint256,uint256,uint256,address,uint256)",
                 saleToken,
@@ -523,29 +523,26 @@ contract TokenPreSale is ReentrancyGuard, Ownable {
     /**
      * @dev To send the LP tokens to a locker
      */
-    function lockLiquidity()
-        external
-        onlyOwner
-    {
+    function lockLiquidity() external onlyOwner {
         require(liquidityFinalized == true, "Liquidity not finalized");
-        
+
         address pair = IContracts(FACTORY).getPair(saleToken, WETH);
         uint256 pairBalance = IContracts(pair).balanceOf(address(this));
 
-        IContracts(pair).approve(
-            LOCKER,
-            pairBalance
-        );
+        IContracts(pair).approve(LOCKER, pairBalance);
 
-        IContracts(LOCKER).lock(treasuryAddress, pair, true, pairBalance, timeUnlockLiquidity, "LP Lock");
+        IContracts(LOCKER).lock(
+            treasuryAddress,
+            pair,
+            true,
+            pairBalance,
+            timeUnlockLiquidity,
+            "LP Lock"
+        );
     }
 
-
-
     function _checkSaleNotStartedYet() private view {
-        require(
-            block.timestamp <= startTimeSeedSale, "Sale already started"
-        );
+        require(block.timestamp <= startTimeSeedSale, "Sale already started");
     }
 
     modifier checkSaleNotStartedYet() {
@@ -554,13 +551,16 @@ contract TokenPreSale is ReentrancyGuard, Ownable {
     }
 
     function _checkSaleActive(uint256 amount) private view {
-        require(block.timestamp >= startTimeSeedSale && block.timestamp <= endTimeSeedSale || block.timestamp >= startTimePrivateSale && block.timestamp <= endTimePrivateSale || block.timestamp >= startTimePublicSale && block.timestamp <= endTimePublicSale,
+        require(
+            (block.timestamp >= startTimeSeedSale &&
+                block.timestamp <= endTimeSeedSale) ||
+                (block.timestamp >= startTimePrivateSale &&
+                    block.timestamp <= endTimePrivateSale) ||
+                (block.timestamp >= startTimePublicSale &&
+                    block.timestamp <= endTimePublicSale),
             "Sale not active"
         );
-        require(
-            amount > 0 && amount <= tokensToSellTotal,
-            "Invalid amount"
-        );
+        require(amount > 0 && amount <= tokensToSellTotal, "Invalid amount");
     }
 
     modifier checkSaleActive(uint256 amount) {
@@ -569,9 +569,7 @@ contract TokenPreSale is ReentrancyGuard, Ownable {
     }
 
     function _checkSaleEnded() private view {
-        require(
-            block.timestamp >= endTimePublicSale, "Sale not over yet"
-        );
+        require(block.timestamp >= endTimePublicSale, "Sale not over yet");
     }
 
     modifier checkSaleEnded() {
@@ -579,7 +577,10 @@ contract TokenPreSale is ReentrancyGuard, Ownable {
         _;
     }
 
-    function isSaleActive(uint256 startTime, uint256 endTime) internal view returns (bool) {
+    function isSaleActive(
+        uint256 startTime,
+        uint256 endTime
+    ) internal view returns (bool) {
         return block.timestamp >= startTime && block.timestamp <= endTime;
     }
 
@@ -595,40 +596,47 @@ contract TokenPreSale is ReentrancyGuard, Ownable {
         return isSaleActive(startTimePublicSale, endTimePublicSale);
     }
 
-
     /**
      * @dev To buy into a presale using ETH. can only be called if any sale is currently active
      * @param amount No of tokens to buy. not in wei
      */
-    function buyWithEth(uint256 amount)
-        external
-        payable
-        checkSaleActive(amount)
-        nonReentrant
-        returns (bool)
-    {
+    function buyWithEth(
+        uint256 amount
+    ) external payable checkSaleActive(amount) nonReentrant returns (bool) {
         require(tokensaleCanceled == false, "Sale canceled");
         require(msg.value > 0, "no ETH sent");
 
-        
         uint256 ethAmount;
         if (isSeedSaleActive()) {
             require(whitelistSeedSale[_msgSender()], "Not whitelisted");
-            require(amount <= maxAmountTokensForSalePerUserForSeed , "Buying too many");
-            require(userAmountBoughtSeed[_msgSender()] <= maxAmountTokensForSalePerUserForSeed, "Buying too many");
+            require(
+                amount <= maxAmountTokensForSalePerUserForSeed,
+                "Buying too many"
+            );
+            require(
+                userAmountBoughtSeed[_msgSender()] <=
+                    maxAmountTokensForSalePerUserForSeed,
+                "Buying too many"
+            );
             require(tokensToSellSeedSale > 0, "All tokens have been sold");
             ethAmount = amount * priceSeedSale;
             require(msg.value == ethAmount, "Wrong ETH amount");
             tokensToSellSeedSale -= amount;
             userAmountBoughtSeed[_msgSender()] += amount;
             ethInvestedSeedSale += msg.value;
-            
         }
 
         if (isPrivateSaleActive()) {
             require(whitelistPrivateSale[_msgSender()], "Not whitelisted");
-            require(amount <= maxAmountTokensForSalePerUserForPrivate, "Buying too many");
-            require(userAmountBoughtPrivate[_msgSender()] <= maxAmountTokensForSalePerUserForPrivate, "Buying too many");
+            require(
+                amount <= maxAmountTokensForSalePerUserForPrivate,
+                "Buying too many"
+            );
+            require(
+                userAmountBoughtPrivate[_msgSender()] <=
+                    maxAmountTokensForSalePerUserForPrivate,
+                "Buying too many"
+            );
             require(tokensToSellPrivateSale > 0, "All tokens have been sold");
             ethAmount = amount * pricePrivateSale;
             require(msg.value == ethAmount, "Wrong ETH amount");
@@ -642,8 +650,15 @@ contract TokenPreSale is ReentrancyGuard, Ownable {
         }
 
         if (isPublicSaleActive()) {
-            require(amount <= maxAmountTokensForSalePerUserForPublic, "Buying too many");
-            require(userAmountBoughtPublic[_msgSender()] <= maxAmountTokensForSalePerUserForPublic, "Buying too many");
+            require(
+                amount <= maxAmountTokensForSalePerUserForPublic,
+                "Buying too many"
+            );
+            require(
+                userAmountBoughtPublic[_msgSender()] <=
+                    maxAmountTokensForSalePerUserForPublic,
+                "Buying too many"
+            );
             require(tokensToSellPublicSale > 0, "All tokens have been sold");
             ethAmount = amount * pricePublicSale;
             require(msg.value == ethAmount, "Wrong ETH amount");
@@ -660,31 +675,23 @@ contract TokenPreSale is ReentrancyGuard, Ownable {
         userDepositETH[_msgSender()] += ethAmount;
 
         if (userVesting[_msgSender()].totalAmount > 0) {
-        userVesting[_msgSender()].totalAmount += (amount *
-            baseDecimals);
+            userVesting[_msgSender()].totalAmount += (amount * baseDecimals);
         } else {
             userVesting[_msgSender()] = Vesting(
                 (amount * baseDecimals),
                 0,
                 vestingStartTime + vestingCliff,
-                vestingStartTime +
-                    vestingCliff +
-                    vestingPeriod
+                vestingStartTime + vestingCliff + vestingPeriod
             );
         }
         return true;
     }
 
-
     /**
      * @dev Helper funtion to get claimable tokens for a given presale.
      * @param user User address
      */
-    function claimableAmount(address user)
-        public
-        view
-        returns (uint256)
-    {
+    function claimableAmount(address user) public view returns (uint256) {
         Vesting memory _user = userVesting[user];
         require(_user.totalAmount > 0, "Nothing to claim");
         uint256 amount = _user.totalAmount - _user.claimedAmount;
@@ -692,11 +699,11 @@ contract TokenPreSale is ReentrancyGuard, Ownable {
         if (block.timestamp < _user.claimStart) return 0;
         if (block.timestamp >= _user.claimEnd) return amount;
 
-
         uint256 vestingDuration = _user.claimEnd - _user.claimStart;
         uint256 timeSinceStart = block.timestamp - _user.claimStart;
         uint256 ClaimablePerSecond = _user.totalAmount / vestingDuration;
-        uint256 amountToClaim = (ClaimablePerSecond * timeSinceStart) - _user.claimedAmount;
+        uint256 amountToClaim = (ClaimablePerSecond * timeSinceStart) -
+            _user.claimedAmount;
 
         return amountToClaim;
     }
@@ -711,26 +718,17 @@ contract TokenPreSale is ReentrancyGuard, Ownable {
         require(liquidityFinalized == true, "Liquidity not added yet");
 
         require(amount > 0, "Zero claim amount");
+        require(saleToken != address(0), "Token address not set");
         require(
-            saleToken != address(0),
-            "Token address not set"
-        );
-        require(
-            amount <=
-                IContracts(saleToken).balanceOf(
-                    address(this)
-                ),
+            amount <= IContracts(saleToken).balanceOf(address(this)),
             "Not enough tokens in the contract"
         );
         userVesting[user].claimedAmount += amount;
-        IContracts(saleToken).transfer(
-            user,
-            amount
-        );
+        IContracts(saleToken).transfer(user, amount);
         return true;
     }
 
-    function userWithdrawETHPresaleCanceled() nonReentrant external {
+    function userWithdrawETHPresaleCanceled() external nonReentrant {
         require(tokensaleCanceled == true, "Sale not canceled");
         require(userDepositETH[_msgSender()] > 0, "No ETH to withdraw");
 
@@ -743,5 +741,4 @@ contract TokenPreSale is ReentrancyGuard, Ownable {
     receive() external payable {
         emit Received(msg.sender, msg.value);
     }
-
 }
