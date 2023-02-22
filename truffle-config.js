@@ -29,9 +29,9 @@ module.exports = {
   ],
 
   api_keys: {
-    etherscan: '8J4ZDUSARGNTS3GS8HNY53FN2IGSPJ1K65',
-    bscscan: 'MU2NN1RF629M146ZC436QBV3YVQW5UPJZ3',
-    snowtrace: 'WYFBAS3WTSMD5ENFKU3ZTZIGQHJAIK9M2Y'
+    etherscan: '',
+    bscscan: '',
+    snowtrace: ''
   },
 
   networks: {
